@@ -44,6 +44,12 @@ _with_defaults(VacationSettings, {})
 
 PLATFORMS: list[str] = ["climate", "sensor", "switch","datetime"]
 
+
+def room_name(room: Room) -> str:
+    """Return the room's display name; the API omits titlePersonalized when never set."""
+    return room.titlePersonalized or room.title or f"Room {room.id}"
+
+
 async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.ConfigEntry) -> bool:
     """Set up Wavin Sentio from a config entry."""
     hass.data.setdefault(DOMAIN, {})
