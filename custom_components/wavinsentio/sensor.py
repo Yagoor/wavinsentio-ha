@@ -1,17 +1,21 @@
-"""Wavin Sentio Outdoor Temperature Sensor integration for Home Assistant."""
+"""Wavin Sentio sensors: outdoor temperature and per-room temperature/humidity."""
 
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
-from homeassistant.const import UnitOfTemperature
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
+from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from wavinsentio.wavinsentio import OutdoorTemperatureSensor
+from wavinsentio.wavinsentio import OutdoorTemperatureSensor, Room
 
-from . import WavinSentioDataCoordinator
+from . import WavinSentioDataCoordinator, room_name
 from .const import CONF_DEVICE_NAME, DOMAIN
 
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
-    """Set up the Wavin Sentio outdoor temperature sensor entity.
+    """Set up the Wavin Sentio sensor entities.
 
     Args:
         hass: Home Assistant instance.
@@ -21,14 +25,51 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
     """
     dataservice = hass.data[DOMAIN].get("coordinator"+entry.data[CONF_DEVICE_NAME])
 
-
-    if not dataservice or not dataservice.get_device().lastConfig.sentio.outdoorTemperatureSensors:
+    if not dataservice:
         return
 
-    entities = [(WavinSentioOutdoorTemperatureSensor(dataservice,outdoorTemperatureSensor))
-                for outdoorTemperatureSensor in dataservice.get_device().lastConfig.sentio.outdoorTemperatureSensors]
+    sentio = dataservice.get_device().lastConfig.sentio
+    entities = [WavinSentioOutdoorTemperatureSensor(dataservice, outdoorTemperatureSensor)
+                for outdoorTemperatureSensor in sentio.outdoorTemperatureSensors]
+    for room in sentio.rooms:
+        entities.append(WavinSentioRoomSensor(
+            dataservice, room, "airTemperature", "Temperature",
+            SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS))
+        entities.append(WavinSentioRoomSensor(
+            dataservice, room, "humidity", "Humidity",
+            SensorDeviceClass.HUMIDITY, PERCENTAGE))
 
     async_add_entities(entities)
+
+
+class WavinSentioRoomSensor(CoordinatorEntity, SensorEntity):
+    """A measurement (temperature or humidity) of a room, on the room's device."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, dataservice: WavinSentioDataCoordinator, room: Room, field: str,
+                 label: str, device_class: SensorDeviceClass, unit: str) -> None:
+        """Initialize the sensor for the given Room attribute."""
+        super().__init__(dataservice)
+        self._room_id = room.id
+        self._field = field
+        self._attr_name = f"{room_name(room)} {label}"
+        self._attr_unique_id = f"{room.id}-{field}"
+        self._attr_device_class = device_class
+        self._attr_native_unit_of_measurement = unit
+        # Same identifiers as the climate entity, so both live on the room's device.
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, str(room.id))},
+            "name": room_name(room),
+            "manufacturer": "Wavin",
+            "model": "Sentio",
+        }
+
+    @property
+    def native_value(self):
+        """Return the current value from the latest coordinator data."""
+        room = self.coordinator.get_room(self._room_id)
+        return getattr(room, self._field) if room is not None else None
 
 
 class WavinSentioOutdoorTemperatureSensor(CoordinatorEntity, SensorEntity):
