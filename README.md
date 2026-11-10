@@ -15,6 +15,7 @@ Afterwards you can go to the Integrations sections and click the add integration
 It will automatically add all the thermostats to your Home Assistant installation and show each one as thermostats in the standard lovelace thermostat UI.
 
 ## Changelog
+- 2026-11-10 Fix setup crashes when the API omits default values (standby mode, rooms, vacation settings), name rooms by their title when they have no personalized name, and fix unloading the integration
 - 2025-11-25 Fix missing timezone in empty vacationModeUntil by bumping wavinsentio package to 0.5.5
 - 2025-08-02 Fix startup problem due to empty vacationModeUntil when never used before
 - 2025-08-02 Fix preset, vacation mode, standby mode, cooling mode and outdoor temperature
