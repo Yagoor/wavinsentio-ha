@@ -11,11 +11,14 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from wavinsentio.wavinsentio import (
     Device,
     HCMode,
+    LastConfig,
     LockMode,
     Room,
+    Sentio,
     StandbyMode,
     UnauthorizedException,
     VacationMode,
+    VacationSettings,
     WavinSentio,
 )
 
@@ -27,6 +30,17 @@ _LOGGER = logging.getLogger(__name__)
 # fails on ''. Map unknown/missing values to the first member, *_UNSPECIFIED.
 for _enum in (HCMode, LockMode, StandbyMode, VacationMode):
     _enum._missing_ = classmethod(lambda cls, value: next(iter(cls)))
+
+# Same reason: whole sub-objects/lists (lastConfig, sentio, rooms, vacationSettings)
+# can be omitted, e.g. for a controller with no rooms set up.
+def _with_defaults(cls, defaults):
+    init = cls.__init__
+    cls.__init__ = lambda self, data: init(self, {**defaults, **(data or {})})
+
+
+_with_defaults(LastConfig, {})
+_with_defaults(Sentio, {"rooms": []})
+_with_defaults(VacationSettings, {})
 
 PLATFORMS: list[str] = ["climate", "sensor", "switch","datetime"]
 
