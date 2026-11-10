@@ -214,7 +214,8 @@ class WavinSentioClimateEntity(CoordinatorEntity, ClimateEntity):
     @property
     def unique_id(self):
         """Return the ID of this device."""
-        return self._room_id
+        # HA rejects non-string unique IDs; the API returns room ids as numbers.
+        return str(self._room_id)
 
     @property
     def device_info(self):
