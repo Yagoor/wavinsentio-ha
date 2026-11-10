@@ -46,16 +46,9 @@ async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.Conf
 
 async def async_unload_entry(hass: HomeAssistant, entry: config_entries.ConfigEntry) -> bool:
     """Unloading a config entry."""
-    unload_ok = all(
-        await asyncio.gather(
-            *[
-                hass.config_entries.async_forward_entry_unload(entry, platform)
-                for platform in PLATFORMS
-            ]
-        )
-    )
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
+        hass.data[DOMAIN].pop("coordinator" + entry.data[CONF_DEVICE_NAME])
     return unload_ok
 
 
