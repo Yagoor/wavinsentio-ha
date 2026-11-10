@@ -46,7 +46,8 @@ class WavinSentioClimateEntity(CoordinatorEntity, ClimateEntity):
     def __init__(self, hass: HomeAssistant, room: Room, dataservice: WavinSentioDataCoordinator) -> None:
         """Initialize the climate device."""
         super().__init__(dataservice)
-        self._name = room.titlePersonalized
+        # The API omits titlePersonalized when it was never set.
+        self._name = room.titlePersonalized or room.title or f"Room {room.id}"
         self._room_id = room.id
         availableHcModes = dataservice.get_device().lastConfig.sentio.availableHcModes
         _hvac_modes = []
