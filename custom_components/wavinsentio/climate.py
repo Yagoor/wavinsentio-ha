@@ -50,12 +50,12 @@ class WavinSentioClimateEntity(CoordinatorEntity, ClimateEntity):
         self._room_id = room.id
         availableHcModes = dataservice.get_device().lastConfig.sentio.availableHcModes
         _hvac_modes = []
-        for mode in availableHcModes:
+        for mode in availableHcModes or []:
             if mode == HCMode.HC_MODE_HEATING.value:
                 _hvac_modes.append(HVACMode.HEAT)
             elif mode == HCMode.HC_MODE_COOLING.value:
                 _hvac_modes.append(HVACMode.COOL)
-        self._hvac_modes = _hvac_modes
+        self._hvac_modes = _hvac_modes or [HVACMode.HEAT]
         self._attr_supported_features = (
             ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE
         )
@@ -196,11 +196,10 @@ class WavinSentioClimateEntity(CoordinatorEntity, ClimateEntity):
     @property
     def hvac_mode(self):
         """Return the current HVAC mode."""
-        if( self._dataservice.get_device().lastConfig.sentio.hcMode == HCMode.HC_MODE_HEATING):
-            return HVACMode.HEAT
-        if( self._dataservice.get_device().lastConfig.sentio.hcMode == HCMode.HC_MODE_COOLING):
+        if self._dataservice.get_device().lastConfig.sentio.hcMode == HCMode.HC_MODE_COOLING:
             return HVACMode.COOL
-        raise ValueError("Unknown HVAC mode")
+        # Heating is the controller default; UNSPECIFIED must not crash the entity.
+        return HVACMode.HEAT
 
     @property
     def hvac_modes(self):
