@@ -10,6 +10,8 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from wavinsentio.wavinsentio import (
     Device,
+    HCMode,
+    LockMode,
     Room,
     StandbyMode,
     UnauthorizedException,
@@ -20,6 +22,11 @@ from wavinsentio.wavinsentio import (
 from .const import CONF_DEVICE_NAME, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
+# The API omits enum fields at their default (UNSPECIFIED) value; the library then
+# fails on ''. Map unknown/missing values to the first member, *_UNSPECIFIED.
+for _enum in (HCMode, LockMode, StandbyMode, VacationMode):
+    _enum._missing_ = classmethod(lambda cls, value: next(iter(cls)))
 
 PLATFORMS: list[str] = ["climate", "sensor", "switch","datetime"]
 
